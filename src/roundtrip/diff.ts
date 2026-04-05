@@ -1,12 +1,12 @@
 import type { LossReport } from '../types/options.js';
-import { normalize } from './normalize.js';
+import { normalize, normalizeExported } from './normalize.js';
 
 export function diffMarkdown(
   input: string,
   exported: string,
 ): LossReport[] {
   const normalizedInput = normalize(input);
-  const normalizedExported = normalize(exported);
+  const normalizedExported = normalizeExported(exported);
 
   if (normalizedInput === normalizedExported) {
     return [];

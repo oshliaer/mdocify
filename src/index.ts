@@ -86,7 +86,7 @@ export async function convert(
 export { parse } from './parser/parse.js';
 export { compile } from './compiler/compiler.js';
 export { diffMarkdown } from './roundtrip/diff.js';
-export { normalize } from './roundtrip/normalize.js';
+export { normalize, normalizeExported } from './roundtrip/normalize.js';
 export { formatReport } from './roundtrip/report.js';
 export type { ConvertOptions, ConvertResult, LossReport } from './types/options.js';
 export type { CompileResult } from './compiler/compiler.js';

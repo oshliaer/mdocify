@@ -4,7 +4,7 @@ export function normalize(markdown: string): string {
   // Normalize line endings
   text = text.replace(/\r\n/g, '\n');
 
-  // Trim trailing whitespace per line
+  // Trim trailing whitespace per line (Google adds trailing `  `)
   text = text
     .split('\n')
     .map((line) => line.trimEnd())
@@ -20,4 +20,15 @@ export function normalize(markdown: string): string {
   text += '\n';
 
   return text;
+}
+
+export function normalizeExported(markdown: string): string {
+  let text = markdown;
+
+  // Unescape Google Docs export escaping (\` → `, \= → =, \_ → _)
+  text = text.replace(/\\`/g, '`');
+  text = text.replace(/\\=/g, '=');
+  text = text.replace(/\\_/g, '_');
+
+  return normalize(text);
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalize } from '../../src/roundtrip/normalize.js';
+import { normalize, normalizeExported } from '../../src/roundtrip/normalize.js';
 import { diffMarkdown } from '../../src/roundtrip/diff.js';
 import { formatReport } from '../../src/roundtrip/report.js';
 
@@ -19,6 +19,30 @@ describe('normalize', () => {
   it('ensures single trailing newline', () => {
     expect(normalize('hello')).toBe('hello\n');
     expect(normalize('hello\n\n\n')).toBe('hello\n');
+  });
+
+  it('does NOT unescape Google escaping (input normalization)', () => {
+    expect(normalize('\\`\\`\\`javascript\n')).toBe('\\`\\`\\`javascript\n');
+  });
+});
+
+describe('normalizeExported', () => {
+  it('unescapes Google Docs backtick escaping', () => {
+    expect(normalizeExported('\\`\\`\\`javascript\ncode\n\\`\\`\\`\n'))
+      .toBe('```javascript\ncode\n```\n');
+  });
+
+  it('unescapes Google Docs equals escaping', () => {
+    expect(normalizeExported('E \\= mc²\n')).toBe('E = mc²\n');
+  });
+
+  it('unescapes Google Docs underscore escaping', () => {
+    expect(normalizeExported('\\_\\_\\_\n')).toBe('___\n');
+  });
+
+  it('handles combined Google escaping + trailing spaces', () => {
+    expect(normalizeExported('\\`\\`\\`javascript  \ncode  \n\\`\\`\\`  \n'))
+      .toBe('```javascript\ncode\n```\n');
   });
 });
 
