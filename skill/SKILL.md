@@ -54,6 +54,20 @@ When `--verify` is set, mdocify:
 4. Reports any losses (missing elements, formatting changes)
 5. Exits with code 1 if differences found
 
+## Known Limitations: Google Docs Export Escaping
+
+Google Docs markdown export aggressively escapes certain characters:
+
+| Input | Export | Normalizer fix |
+|-------|--------|----------------|
+| `` ` `` | `\`` | `\`` → `` ` `` |
+| `=` | `\=` | `\=` → `=` |
+| `_` | `\_` | `\_` → `_` |
+
+**Fenced code blocks** (` ``` `): mdocify inserts literal fence markers as document text with Courier New styling. Google exports them with escaped backticks (`\`\`\``). The built-in normalizer unescapes them for round-trip verification.
+
+**Trailing spaces**: Google adds `  ` (two spaces) to most lines. Normalizer strips them.
+
 > [!CAUTION]
 > This is a **write** command — confirm with the user before executing.
 

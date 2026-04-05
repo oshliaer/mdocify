@@ -20,6 +20,24 @@ describe('normalize', () => {
     expect(normalize('hello')).toBe('hello\n');
     expect(normalize('hello\n\n\n')).toBe('hello\n');
   });
+
+  it('unescapes Google Docs backtick escaping', () => {
+    expect(normalize('\\`\\`\\`javascript\ncode\n\\`\\`\\`\n'))
+      .toBe('```javascript\ncode\n```\n');
+  });
+
+  it('unescapes Google Docs equals escaping', () => {
+    expect(normalize('E \\= mc²\n')).toBe('E = mc²\n');
+  });
+
+  it('unescapes Google Docs underscore escaping', () => {
+    expect(normalize('\\_\\_\\_\n')).toBe('___\n');
+  });
+
+  it('handles combined Google escaping + trailing spaces', () => {
+    expect(normalize('\\`\\`\\`javascript  \ncode  \n\\`\\`\\`  \n'))
+      .toBe('```javascript\ncode\n```\n');
+  });
 });
 
 describe('diffMarkdown', () => {

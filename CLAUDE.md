@@ -23,6 +23,12 @@ md → remark-parse (MDAST) → compiler (BatchRequest[]) → executor (gws batc
 - **Двухпроходная компиляция:** вставка текста (вперёд) → стили (назад по индексам)
 - **UTF-16 code units** для индексов (Google Docs API требование)
 
+## Google Docs Export Escaping
+
+Google экранирует при export: `` ` `` → `\``, `=` → `\=`, `_` → `\_`.
+Fenced code blocks вставляются как literal ``` в текст — экранируются, но normalizer unescapes.
+Trailing `  ` на каждой строке — normalizer strip'ает.
+
 ## Стек
 
 TypeScript, ESM, unified/remark, vitest, commander, gws CLI

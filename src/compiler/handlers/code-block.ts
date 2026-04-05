@@ -8,9 +8,16 @@ export function handleCodeBlock(
   tracker: IndexTracker,
   _context: CompilerContext,
 ): HandlerResult {
-  const text = node.value + '\n';
+  // Insert literal fence markers as text so they survive Google Docs export.
+  // Google escapes backticks (\`) on export, but our normalizer unescapes them.
+  const lang = node.lang ?? '';
+  const openFence = '```' + lang + '\n';
+  const closeFence = '```\n';
+  const text = openFence + node.value + '\n' + closeFence;
+
   const range = tracker.insert(text);
 
+  // Trailing blank line after code block
   const newline = tracker.insert('\n');
 
   const insertions = [
@@ -18,6 +25,7 @@ export function handleCodeBlock(
     rb.insertText('\n', newline.startIndex),
   ];
 
+  // Apply monospace font to the entire block (fences + content)
   const styles = [
     rb.updateTextStyle(
       range,
