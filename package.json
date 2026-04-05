@@ -1,0 +1,38 @@
+{
+  "name": "mdocify",
+  "version": "0.1.0",
+  "description": "Convert Markdown to Google Docs via batch API — a gws add-on",
+  "type": "module",
+  "bin": {
+    "mdocify": "./dist/bin/mdocify.js"
+  },
+  "exports": {
+    ".": "./dist/src/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx bin/mdocify.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "MDOCIFY_E2E=1 vitest run tests/e2e"
+  },
+  "keywords": ["markdown", "google-docs", "gws", "batch-api", "cli"],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "commander": "^12.0.0",
+    "remark-gfm": "^4.0.0",
+    "remark-parse": "^11.0.0",
+    "remark-stringify": "^11.0.0",
+    "unified": "^11.0.0",
+    "unist-util-visit": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^2.0.0"
+  }
+}
