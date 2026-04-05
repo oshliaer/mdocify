@@ -11,9 +11,13 @@ export function handleCodeBlock(
   // Insert literal fence markers as text so they survive Google Docs export.
   // Google escapes backticks (\`) on export, but our normalizer unescapes them.
   const lang = node.lang ?? '';
-  const openFence = '```' + lang + '\n';
-  const closeFence = '```\n';
-  const text = openFence + node.value + '\n' + closeFence;
+  // Use longer fence if content contains backtick sequences
+  const maxRun = (node.value.match(/`+/g) ?? []).reduce((m, s) => Math.max(m, s.length), 0);
+  const fence = '`'.repeat(Math.max(3, maxRun + 1));
+  const openFence = fence + lang + '\n';
+  const closeFence = fence + '\n';
+  const content = node.value.length === 0 ? '' : node.value + '\n';
+  const text = openFence + content + closeFence;
 
   const range = tracker.insert(text);
 
