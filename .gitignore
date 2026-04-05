@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Discovery artifacts (regenerable)
+discovery-doc.json
+discovery-export.md
+
+# E2E temp files
+/tmp/
