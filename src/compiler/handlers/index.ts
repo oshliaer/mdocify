@@ -2,6 +2,10 @@ import type { Node } from 'mdast';
 import type { BatchRequest } from '../../types/google-docs.js';
 import type { IndexTracker } from '../index-tracker.js';
 
+// TODO: Context properties are reserved for future phases:
+// - listDepth: nesting level for indent-based list styling (#3)
+// - insideTable: cell-specific formatting (#6)
+// - insideBlockquote: blockquote-aware compilation (#2)
 export interface CompilerContext {
   listDepth: number;
   insideTable: boolean;
@@ -35,6 +39,7 @@ export function mergeResults(...results: HandlerResult[]): HandlerResult {
   };
 }
 
+export { handleBreak } from './break.js';
 export { handleHeading } from './heading.js';
 export { handleParagraph } from './paragraph.js';
 export { handleText } from './text.js';

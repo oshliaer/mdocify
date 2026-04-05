@@ -23,7 +23,7 @@ export function insertTextAtEnd(text: string): InsertTextRequest {
   return {
     insertText: {
       text,
-      endOfSegmentLocation: { segmentId: '' },
+      endOfSegmentLocation: {},
     },
   };
 }

@@ -71,13 +71,19 @@ export async function fillTableCells(
   // Get document to find cell indices
   const doc = await getDocument(documentId);
   const body = doc.body?.content;
-  if (!body) return;
+  if (!body) {
+    throw new Error(`Document ${documentId} did not include body content`);
+  }
 
   // Find the table element
   const tableElement = body.find(
     (el: any) => el.table && el.startIndex >= tableIndex,
   );
-  if (!tableElement?.table) return;
+  if (!tableElement?.table) {
+    throw new Error(
+      `Could not resolve table near index ${tableIndex} in document ${documentId}`,
+    );
+  }
 
   const requests: BatchRequest[] = [];
 

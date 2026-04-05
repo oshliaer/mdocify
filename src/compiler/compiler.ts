@@ -7,6 +7,7 @@ import {
   createContext,
   handleHeading,
   handleParagraph,
+  handleBreak,
   handleText,
   handleEmphasis,
   handleStrong,
@@ -96,6 +97,8 @@ function compileNode(
       return handleThematicBreak(node as any, tracker, context);
     case 'image':
       return handleImage(node as any, tracker, context);
+    case 'break':
+      return handleBreak(node as any, tracker, context);
     default:
       // Unknown node type — skip silently
       return { insertions: [], styles: [] };

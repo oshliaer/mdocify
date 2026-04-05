@@ -43,9 +43,9 @@ function detectElement(line: string): string {
   if (/^[-*+]\s/.test(line)) return 'unordered-list';
   if (/^\d+\.\s/.test(line)) return 'ordered-list';
   if (/^>/.test(line)) return 'blockquote';
-  if (/^---$|^\*\*\*$|^___$/.test(line)) return 'thematic-break';
+  if (/^---$|^\*\*\*$|^___$|^─{3,}$/.test(line)) return 'thematic-break';
   if (/!\[/.test(line)) return 'image';
-  if (/\[.*\]\(.*\)/.test(line)) return 'link';
+  if (/\[.*?\]\(.*?\)/.test(line)) return 'link';
   if (/`[^`]+`/.test(line)) return 'inline-code';
   if (/\*\*[^*]+\*\*/.test(line)) return 'bold';
   if (/\*[^*]+\*/.test(line)) return 'italic';

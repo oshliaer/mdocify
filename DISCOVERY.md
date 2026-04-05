@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-05
 **Document:** `mdocify-discovery-test`
-**Document ID:** `1ZlkoL_AT-9kgwSG7_wnM4T5rTQ3klLBkhXoU0oveHXM`
+**Document ID:** `<redacted>`
 **Export MIME type:** `text/markdown`
 
 ## Raw Export Output

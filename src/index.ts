@@ -1,8 +1,11 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { parse } from './parser/parse.js';
 import { compile } from './compiler/compiler.js';
 import {
   createDocument,
+  getDocument,
   batchUpdate,
   exportAsMarkdown,
   fillTableCells,
@@ -20,11 +23,23 @@ export async function convert(
   const { requests, tables } = compile(tree);
 
   // Create or use existing document
-  const title = options.title ?? markdownPath.replace(/.*\//, '').replace(/\.md$/, '');
+  const title = options.title ?? path.basename(markdownPath, '.md');
   let documentId: string;
 
   if (options.documentId) {
     documentId = options.documentId;
+    // Clear existing content before inserting new
+    const existingDoc = await getDocument(documentId);
+    const bodyContent = existingDoc.body?.content;
+    if (bodyContent && bodyContent.length > 1) {
+      const lastElement = bodyContent[bodyContent.length - 1];
+      const endIndex = lastElement.endIndex - 1; // preserve trailing newline
+      if (endIndex > 1) {
+        await batchUpdate(documentId, [{
+          deleteContentRange: { range: { startIndex: 1, endIndex } },
+        }]);
+      }
+    }
   } else {
     const doc = await createDocument(title);
     documentId = doc.documentId;
@@ -53,7 +68,7 @@ export async function convert(
 
   // Round-trip verification
   if (options.verify) {
-    const exportPath = options.output ?? `/tmp/mdocify-export-${documentId}.md`;
+    const exportPath = options.output ?? path.join(os.tmpdir(), `mdocify-export-${documentId}.md`);
     await exportAsMarkdown(documentId, exportPath);
     const exported = await readFile(exportPath, 'utf-8');
     losses = diffMarkdown(markdown, exported);

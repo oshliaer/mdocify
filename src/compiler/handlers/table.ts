@@ -21,6 +21,8 @@ export function handleTable(
   const columns = node.children[0]?.children.length ?? 0;
   const tableIndex = tracker.current;
 
+  // TODO: cellContents is plain text only — inline formatting (bold, links, code)
+  // inside table cells is lost. Future: store MDAST nodes and compile them in phase 2.
   const cellContents: string[][] = [];
   for (const row of node.children as TableRow[]) {
     const rowContents: string[] = [];
@@ -39,8 +41,11 @@ export function handleTable(
   // 3. Fill cells in a second batchUpdate
   const insertions: BatchRequest[] = [rb.insertTable(rows, columns, tableIndex)];
 
-  // Estimate: each table takes approximately (rows * cols * 4 + rows * 2 + 4) indices
-  const estimatedSize = rows * columns * 4 + rows * 2 + 4;
+  // TODO(#6): Table insertion should be a hard phase boundary.
+  // The heuristic estimate below may diverge from Google Docs' actual internal size.
+  // Proper fix: split compilation into phases, fetch real post-table cursor after insert.
+  // For now, use the formula for an empty table: 3*R*C + 2*R + 2 indices.
+  const estimatedSize = rows * columns * 3 + rows * 2 + 2;
   tracker.advance(estimatedSize);
 
   // Add trailing newline

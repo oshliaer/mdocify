@@ -13,8 +13,8 @@ export function normalize(markdown: string): string {
   // Collapse multiple blank lines into one
   text = text.replace(/\n{3,}/g, '\n\n');
 
-  // Trim leading/trailing whitespace
-  text = text.trim();
+  // Trim only trailing whitespace (preserve leading whitespace for indented code blocks)
+  text = text.trimEnd();
 
   // Ensure single trailing newline
   text += '\n';

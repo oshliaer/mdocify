@@ -30,7 +30,7 @@ npx mdocify convert <file> [options]
 | `--title` | — | filename | Document title |
 | `--document-id` | — | — | Update existing document |
 | `--verify` | — | false | Run round-trip verification |
-| `--output` | — | /tmp/ | Path for exported markdown (with --verify) |
+| `--output` | — | `$TMPDIR/mdocify-export-<id>.md` | Path for exported markdown (with --verify) |
 
 ## Examples
 
