@@ -9,8 +9,10 @@
   "exports": {
     ".": "./dist/src/index.js"
   },
+  "files": ["dist", "skill"],
   "scripts": {
     "build": "tsc",
+    "prepublishOnly": "npm run build",
     "dev": "tsx bin/mdocify.ts",
     "test": "vitest run",
     "test:watch": "vitest",
