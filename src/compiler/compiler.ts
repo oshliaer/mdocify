@@ -67,7 +67,9 @@ export function compile(tree: Root): CompileResult {
       // Table node
       const tableNode = group.node;
       const rows = tableNode.children.length;
+      if (rows === 0) continue;
       const columns = tableNode.children[0]?.children.length ?? 0;
+      if (columns === 0) continue;
       const cellContents = tableNode.children.map((row) =>
         row.children.map((cell) => extractCellText(cell)),
       );
