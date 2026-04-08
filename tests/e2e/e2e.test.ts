@@ -21,8 +21,8 @@ describe('e2e: convert', () => {
     expect(result.url).toContain(result.documentId);
   }, 60_000);
 
-  it('creates new document from sample_02.md (7 tables)', async () => {
-    const result = await convert(resolve(import.meta.dirname, '../sample_02.md'));
+  it('creates new document from full.md (with table)', async () => {
+    const result = await convert(resolve(import.meta.dirname, '../../fixtures/full.md'));
     createdDocs.push(result.documentId);
 
     expect(result.documentId).toBeTruthy();
@@ -45,7 +45,7 @@ describe('e2e: convert', () => {
 
     // Overwrite with different content
     const result = await convert(
-      resolve(import.meta.dirname, '../sample_02.md'),
+      resolve(import.meta.dirname, '../../fixtures/full.md'),
       { documentId: initial.documentId },
     );
 
@@ -63,15 +63,14 @@ describe('e2e: convert', () => {
     expect(result.losses.length).toBe(0);
   }, 60_000);
 
-  it('round-trip sample_02.md reports differences', async () => {
+  it('round-trip full.md reports differences', async () => {
     const result = await convert(
-      resolve(import.meta.dirname, '../sample_02.md'),
+      resolve(import.meta.dirname, '../../fixtures/full.md'),
       { verify: true },
     );
     createdDocs.push(result.documentId);
 
-    // Complex doc will have some losses (bold in tables, paragraph merging)
-    // but should be significantly less than 228 (pre-normalizer)
+    // Complex doc may have some losses but should be manageable
     expect(result.losses.length).toBeLessThan(50);
   }, 120_000);
 
