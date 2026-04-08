@@ -15,7 +15,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "prepublishOnly": "npm run build",
+    "prepare": "npm run build",
     "dev": "tsx bin/mdocify.ts",
     "test": "vitest run",
     "test:watch": "vitest",
