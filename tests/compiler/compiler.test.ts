@@ -9,50 +9,76 @@ function fixture(name: string): string {
 }
 
 describe('compile', () => {
-  it('compiles basic headings and paragraphs', () => {
+  it('compiles basic headings and paragraphs into a single phase', () => {
     const md = fixture('basic.md');
     const tree = parse(md);
     const result = compile(tree);
 
-    expect(result.requests.length).toBeGreaterThan(0);
+    const requestPhases = result.phases.filter((p) => p.type === 'requests');
+    expect(requestPhases.length).toBe(1);
 
-    // Should have insertText requests
-    const insertions = result.requests.filter((r) => 'insertText' in r);
-    expect(insertions.length).toBeGreaterThan(0);
+    const requests = requestPhases[0].requests;
+    expect(requests.length).toBeGreaterThan(0);
 
-    // Should have heading style requests
-    const headingStyles = result.requests.filter(
+    const headingStyles = requests.filter(
       (r) =>
         'updateParagraphStyle' in r &&
         r.updateParagraphStyle.paragraphStyle.namedStyleType?.startsWith('HEADING'),
     );
-    expect(headingStyles.length).toBe(3); // H1, H2, H3
+    expect(headingStyles.length).toBe(3);
   });
 
-  it('compiles full document without throwing', () => {
+  it('splits phases at table boundaries', () => {
     const md = fixture('full.md');
     const tree = parse(md);
     const result = compile(tree);
 
-    expect(result.requests.length).toBeGreaterThan(0);
-    // Full doc has a table
-    expect(result.tables.length).toBe(1);
+    const tablePhases = result.phases.filter((p) => p.type === 'table');
+    expect(tablePhases.length).toBe(1);
+    if (tablePhases[0].type === 'table') {
+      expect(tablePhases[0].table.rows).toBeGreaterThan(0);
+      expect(tablePhases[0].table.columns).toBeGreaterThan(0);
+    }
   });
 
-  it('styles are sorted in reverse index order', () => {
+  it('defers compilation after first table', () => {
+    const md = fixture('full.md');
+    const tree = parse(md);
+    const result = compile(tree);
+
+    const deferredPhases = result.phases.filter((p) => p.type === 'deferred');
+    // full.md has content after the table → should have deferred phase
+    expect(deferredPhases.length).toBeGreaterThan(0);
+  });
+
+  it('styles are sorted in reverse index order within request phases', () => {
     const md = '# First\n\n## Second\n\nParagraph\n';
     const tree = parse(md);
     const result = compile(tree);
 
-    const styles = result.requests.filter(
-      (r) => 'updateParagraphStyle' in r || 'updateTextStyle' in r,
-    );
+    for (const phase of result.phases) {
+      if (phase.type !== 'requests') continue;
 
-    for (let i = 1; i < styles.length; i++) {
-      const prevIdx = getStartIndex(styles[i - 1]);
-      const currIdx = getStartIndex(styles[i]);
-      expect(prevIdx).toBeGreaterThanOrEqual(currIdx);
+      const styles = phase.requests.filter(
+        (r) => 'updateParagraphStyle' in r || 'updateTextStyle' in r,
+      );
+
+      for (let i = 1; i < styles.length; i++) {
+        const prevIdx = getStartIndex(styles[i - 1]);
+        const currIdx = getStartIndex(styles[i]);
+        expect(prevIdx).toBeGreaterThanOrEqual(currIdx);
+      }
     }
+  });
+
+  it('handles document with many tables (sample_02)', () => {
+    const md = readFileSync(resolve(import.meta.dirname, '../sample_02.md'), 'utf-8');
+    const tree = parse(md);
+    const result = compile(tree);
+
+    const tablePhases = result.phases.filter((p) => p.type === 'table');
+    // sample_02.md has 7 tables
+    expect(tablePhases.length).toBe(7);
   });
 });
 

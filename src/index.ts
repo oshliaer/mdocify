@@ -1,15 +1,15 @@
 import { readFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { parse } from './parser/parse.js';
-import { compile } from './compiler/compiler.js';
 import {
-  createDocument,
-  getDocument,
-  batchUpdate,
+  uploadFile,
+  copyAsGoogleDoc,
+  exportAsHtml,
   exportAsMarkdown,
-  fillTableCells,
-} from './executor/executor.js';
+  updateWithUpload,
+  deleteFile,
+  cleanupFiles,
+} from './executor/native.js';
 import { diffMarkdown } from './roundtrip/diff.js';
 import { formatReport } from './roundtrip/report.js';
 import type { ConvertOptions, ConvertResult, LossReport } from './types/options.js';
@@ -19,48 +19,33 @@ export async function convert(
   options: ConvertOptions = {},
 ): Promise<ConvertResult> {
   const markdown = await readFile(markdownPath, 'utf-8');
-  const tree = parse(markdown);
-  const { requests, tables } = compile(tree);
-
-  // Create or use existing document
   const title = options.title ?? path.basename(markdownPath, '.md');
   let documentId: string;
 
-  if (options.documentId) {
-    documentId = options.documentId;
-    // Clear existing content before inserting new
-    const existingDoc = await getDocument(documentId);
-    const bodyContent = existingDoc.body?.content;
-    if (bodyContent && bodyContent.length > 1) {
-      const lastElement = bodyContent[bodyContent.length - 1];
-      const endIndex = lastElement.endIndex - 1; // preserve trailing newline
-      if (endIndex > 1) {
-        await batchUpdate(documentId, [{
-          deleteContentRange: { range: { startIndex: 1, endIndex } },
-        }]);
+  // Upload md to Google Drive
+  const mdFileId = await uploadFile(markdownPath, `mdocify-temp-${Date.now()}.md`);
+
+  try {
+    if (options.documentId) {
+      // Overwrite existing: copy → export html → update target → cleanup
+      const tempDocId = await copyAsGoogleDoc(mdFileId, `mdocify-temp-${Date.now()}`);
+      const htmlPath = path.join(os.tmpdir(), `mdocify-${Date.now()}.html`);
+
+      try {
+        await exportAsHtml(tempDocId, htmlPath);
+        await updateWithUpload(options.documentId, htmlPath);
+      } finally {
+        await deleteFile(tempDocId).catch(() => {});
+        await cleanupFiles(htmlPath);
       }
-    }
-  } else {
-    const doc = await createDocument(title);
-    documentId = doc.documentId;
-  }
 
-  // Send main batch requests
-  if (requests.length > 0) {
-    await batchUpdate(documentId, requests);
-  }
-
-  // Fill table cells (second phase)
-  for (const table of tables) {
-    if (table.needsSecondPhase) {
-      await fillTableCells(
-        documentId,
-        table.tableIndex,
-        table.rows,
-        table.columns,
-        table.cellContents,
-      );
+      documentId = options.documentId;
+    } else {
+      // New document: copy with conversion
+      documentId = await copyAsGoogleDoc(mdFileId, title);
     }
+  } finally {
+    await deleteFile(mdFileId).catch(() => {});
   }
 
   const url = `https://docs.google.com/document/d/${documentId}/edit`;
@@ -83,11 +68,7 @@ export async function convert(
   return { documentId, title, url, losses };
 }
 
-export { parse } from './parser/parse.js';
-export { compile } from './compiler/compiler.js';
 export { diffMarkdown } from './roundtrip/diff.js';
 export { normalize, normalizeExported } from './roundtrip/normalize.js';
 export { formatReport } from './roundtrip/report.js';
 export type { ConvertOptions, ConvertResult, LossReport } from './types/options.js';
-export type { CompileResult } from './compiler/compiler.js';
-export type { BatchRequest } from './types/google-docs.js';

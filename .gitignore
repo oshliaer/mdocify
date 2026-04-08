@@ -11,3 +11,4 @@ fixtures/experiments/
 
 # E2E temp files
 /tmp/
+tests/sample_*.md
