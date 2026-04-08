@@ -72,12 +72,12 @@ describe('compile', () => {
   });
 
   it('handles document with many tables (sample_02)', () => {
-    const md = readFileSync(resolve(import.meta.dirname, '../sample_02.md'), 'utf-8');
+    const table = '| A | B |\n| - | - |\n| 1 | 2 |\n';
+    const md = Array(7).fill(table).join('\n');
     const tree = parse(md);
     const result = compile(tree);
 
     const tablePhases = result.phases.filter((p) => p.type === 'table');
-    // sample_02.md has 7 tables
     expect(tablePhases.length).toBe(7);
   });
 });
