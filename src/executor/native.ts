@@ -78,10 +78,11 @@ export async function updateWithUpload(fileId: string, localPath: string): Promi
 }
 
 export async function deleteFile(fileId: string): Promise<void> {
-  await gws(
+  const result = await gws(
     'drive', 'files', 'delete',
     '--params', JSON.stringify({ fileId }),
   );
+  parseResponse(result);
 }
 
 export async function cleanupFiles(...paths: string[]): Promise<void> {
