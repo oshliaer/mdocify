@@ -94,11 +94,11 @@ git push origin prod
 
 ```bash
 # SSH на сервер
-ssh mityayka@10.145.16.38
+ssh user@host
 
 # Применить SQL миграции вручную
-cd /opt/apps/warehouse
-docker compose exec -T wds-postgres psql -U <user> -d <db> < migration.sql
+cd /path/to/app
+docker compose exec -T postgres-service psql -U <user> -d <db> < migration.sql
 
 # Или через Claude Code:
 # "Примени миграцию 1709290800004 на проде через psql"
