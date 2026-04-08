@@ -33,7 +33,7 @@ export interface TableData {
 
 export type CompilePhase =
   | { type: 'requests'; requests: BatchRequest[] }
-  | { type: 'table'; insertRequest: BatchRequest; table: TableData }
+  | { type: 'table'; insertRequest?: BatchRequest; table: TableData }
   | { type: 'deferred'; nodes: Content[] };
 
 export interface CompileResult {
@@ -76,7 +76,7 @@ export function compile(tree: Root): CompileResult {
 
       phases.push({
         type: 'table',
-        insertRequest: rb.insertTable(rows, columns, needsDeferred ? -1 : tracker.current),
+        insertRequest: needsDeferred ? undefined : rb.insertTable(rows, columns, tracker.current),
         table: { rows, columns, cellContents },
       });
 
