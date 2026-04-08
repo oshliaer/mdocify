@@ -56,7 +56,7 @@ md → remark-parse (MDAST)
 | `npm test` | Run unit and integration tests (vitest) |
 | `npm run test:watch` | Run tests in watch mode |
 | `npm run test:e2e` | Run end-to-end tests against real Google Docs (requires authentication) |
-| `npm run prepublishOnly` | Auto-build before npm publish |
+| `npm run prepare` | Auto-build before npm publish and git-based installs |
 
 ## Configuration
 
