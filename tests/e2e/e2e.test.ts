@@ -1,7 +1,6 @@
 import { describe, it, expect, afterAll } from 'vitest';
 import { convert } from '../../src/index.js';
 import { deleteFile } from '../../src/executor/native.js';
-import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const createdDocs: string[] = [];
