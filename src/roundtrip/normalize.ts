@@ -12,7 +12,7 @@ export function normalize(markdown: string): string {
 
   // Normalize table separator rows to canonical form: |---|---|
   // Must contain at least one dash per cell. Matches: |---|, | :---- |, | :---: |
-  text = text.replace(/^\|[:\s-]*-[:\s-]*(?:\|[:\s-]*-[:\s-]*)+\|$/gm, (line) => {
+  text = text.replace(/^\|[:\s-]*-[:\s-]*(?:\|[:\s-]*-[:\s-]*)*\|$/gm, (line) => {
     const cols = line.split('|').slice(1, -1); // remove empty first/last from split
     return '|' + cols.map(() => '---|').join('');
   });
