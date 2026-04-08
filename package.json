@@ -1,6 +1,6 @@
 {
   "name": "@oshliaer/mdocify",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Convert Markdown to Google Docs via batch API — a gws add-on",
   "type": "module",
   "bin": {
