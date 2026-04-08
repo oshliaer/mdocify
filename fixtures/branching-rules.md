@@ -36,7 +36,7 @@ git checkout -b feature/materialized-view-cold-start
 
 Пример промпта:
 
-```
+```text
 Мы на ветке feature/materialized-view-cold-start.
 Реализуй следующий план: [описание]
 НЕ деплой на прод — только код и тесты.
