@@ -6,10 +6,18 @@ import { chunkRequests } from './chunker.js';
 const exec = promisify(execFile);
 
 async function gws(...args: string[]): Promise<string> {
-  const { stdout } = await exec('gws', args, {
-    maxBuffer: 10 * 1024 * 1024,
-  });
-  return stdout;
+  try {
+    const { stdout } = await exec('gws', args, {
+      maxBuffer: 50 * 1024 * 1024,
+    });
+    return stdout;
+  } catch (err: any) {
+    // gws may exit non-zero on retries but still produce valid output
+    if (err.stdout && err.stdout.trim().startsWith('{')) {
+      return err.stdout;
+    }
+    throw err;
+  }
 }
 
 export async function createDocument(title: string): Promise<{ documentId: string }> {
@@ -40,7 +48,11 @@ export async function getDocument(documentId: string): Promise<any> {
     'docs', 'documents', 'get',
     '--params', JSON.stringify({ documentId }),
   );
-  return JSON.parse(result);
+  const doc = JSON.parse(result);
+  if (doc.error) {
+    throw new Error(`gws docs get error: ${doc.error.message ?? JSON.stringify(doc.error)}`);
+  }
+  return doc;
 }
 
 export async function exportAsMarkdown(
@@ -63,26 +75,22 @@ export async function deleteFile(fileId: string): Promise<void> {
 
 export async function fillTableCells(
   documentId: string,
-  tableIndex: number,
   rows: number,
   columns: number,
   cellContents: string[][],
 ): Promise<void> {
-  // Get document to find cell indices
+  // Get document to find the last table's cell indices
   const doc = await getDocument(documentId);
   const body = doc.body?.content;
   if (!body) {
     throw new Error(`Document ${documentId} did not include body content`);
   }
 
-  // Find the table element
-  const tableElement = body.find(
-    (el: any) => el.table && el.startIndex >= tableIndex,
-  );
+  // Find the last table element (the one we just inserted)
+  const tableElements = body.filter((el: any) => el.table);
+  const tableElement = tableElements[tableElements.length - 1];
   if (!tableElement?.table) {
-    throw new Error(
-      `Could not resolve table near index ${tableIndex} in document ${documentId}`,
-    );
+    throw new Error(`No table found in document ${documentId}`);
   }
 
   const requests: BatchRequest[] = [];
@@ -99,7 +107,6 @@ export async function fillTableCells(
       const text = cellContents[r]?.[c];
       if (!text) continue;
 
-      // Cell content starts after the cell's first paragraph start
       const cellContent = cell.content?.[0];
       if (!cellContent) continue;
 
@@ -116,4 +123,11 @@ export async function fillTableCells(
   if (requests.length > 0) {
     await batchUpdate(documentId, requests);
   }
+}
+
+export function getDocumentEndIndex(doc: any): number {
+  const body = doc.body?.content;
+  if (!body || body.length === 0) return 1;
+  const lastElement = body[body.length - 1];
+  return lastElement.endIndex ?? 1;
 }

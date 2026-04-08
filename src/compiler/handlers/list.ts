@@ -4,11 +4,18 @@ import type { CompilerContext, HandlerResult } from './index.js';
 import type { BatchRequest, Range } from '../../types/google-docs.js';
 import * as rb from '../request-builder.js';
 
+export type CompileNodeFn = (
+  node: any,
+  tracker: IndexTracker,
+  context: CompilerContext,
+) => HandlerResult;
+
 export function handleList(
   node: List,
   tracker: IndexTracker,
   context: CompilerContext,
-  compileChildren: (node: any, tracker: IndexTracker, context: CompilerContext) => HandlerResult,
+  compileChildren: CompileNodeFn,
+  compileNode: CompileNodeFn,
 ): HandlerResult {
   const bulletPreset = node.ordered
     ? 'NUMBERED_DECIMAL_NESTED'
@@ -23,12 +30,11 @@ export function handleList(
   };
 
   for (const item of node.children as ListItem[]) {
-    const itemResult = compileListItem(item, tracker, childContext, compileChildren);
+    const itemResult = compileListItem(item, tracker, childContext, compileChildren, compileNode);
 
     insertions.push(...itemResult.insertions);
     styles.push(...itemResult.styles);
 
-    // Apply bullets only to this item's own paragraph ranges, not nested sublists
     for (const range of itemResult.paragraphRanges) {
       styles.push(rb.createParagraphBullets(range, bulletPreset));
     }
@@ -45,7 +51,8 @@ function compileListItem(
   node: ListItem,
   tracker: IndexTracker,
   context: CompilerContext,
-  compileChildren: (node: any, tracker: IndexTracker, context: CompilerContext) => HandlerResult,
+  compileChildren: CompileNodeFn,
+  compileNode: CompileNodeFn,
 ): ListItemResult {
   const allInsertions: BatchRequest[] = [];
   const allStyles: BatchRequest[] = [];
@@ -53,14 +60,13 @@ function compileListItem(
 
   for (const child of node.children) {
     if (child.type === 'list') {
-      // Nested list — compiled recursively, gets its own bullet ranges
-      const listResult = handleList(child as List, tracker, context, compileChildren);
+      const listResult = handleList(child as List, tracker, context, compileChildren, compileNode);
       allInsertions.push(...listResult.insertions);
       allStyles.push(...listResult.styles);
     } else {
-      // Track paragraph range for bullet application (only top-level paragraphs)
       const paragraphStart = tracker.current;
-      const result = compileChildren(child as any, tracker, context);
+      // Use compileNode (not compileChildren) so paragraph handler adds \n
+      const result = compileNode(child as any, tracker, context);
       const paragraphEnd = tracker.current;
 
       allInsertions.push(...result.insertions);

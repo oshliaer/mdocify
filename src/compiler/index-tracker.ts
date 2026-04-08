@@ -20,6 +20,10 @@ export class IndexTracker {
     this.cursor += n;
   }
 
+  setCursor(n: number): void {
+    this.cursor = n;
+  }
+
   peek(): number {
     return this.cursor;
   }

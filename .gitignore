@@ -6,5 +6,9 @@ dist/
 discovery-doc.json
 discovery-export.md
 
+# Experiment export artifacts (regenerable)
+fixtures/experiments/
+
 # E2E temp files
 /tmp/
+tests/sample_*.md

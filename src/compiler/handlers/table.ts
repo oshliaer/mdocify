@@ -63,7 +63,7 @@ export function handleTable(
   };
 }
 
-function extractCellText(cell: TableCell): string {
+export function extractCellText(cell: TableCell): string {
   const parts: string[] = [];
   for (const child of cell.children) {
     if (child.type === 'text') {
