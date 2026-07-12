@@ -31,6 +31,10 @@ npx mdocify convert <file> [options]
 | `--document-id` | — | — | Update existing document |
 | `--verify` | — | false | Run round-trip verification |
 | `--output` | — | `$TMPDIR/mdocify-export-<id>.md` | Path for exported markdown (with --verify) |
+| `--preset <name>` | — | — | Named bundle of post-upload settings (e.g. `legal`) |
+| `--alignment <value>` | — | — | Paragraph alignment: `start` \| `center` \| `end` \| `justified` \| `none` |
+| `--font <family>` | — | — | Font family applied document-wide (e.g. `"Open Sans"`) |
+| `--font-size <pt>` | — | — | Font size in points |
 
 ## Examples
 
@@ -43,7 +47,24 @@ npx mdocify convert README.md --title "Project Documentation"
 
 # With round-trip verification
 npx mdocify convert README.md --verify --output exported.md
+
+# Apply the "legal" preset (justified + Open Sans 11pt) to an existing doc
+npx mdocify convert contract.md --document-id <id> --preset legal
+
+# Override a preset value
+npx mdocify convert contract.md --preset legal --font-size 12
 ```
+
+## Presets
+
+Presets are named bundles of post-upload settings defined in `src/presets.ts` of the package.
+The skill only references presets by name; execution happens inside mdocify — no wrapping shell logic required.
+
+| Preset | What it sets | Typical use |
+|--------|--------------|-------------|
+| `legal` | Alignment `JUSTIFIED`; per-heading Open Sans (H1 20 / H2 16 / H3 14 / H4 12 / H5 11 / H6 11 pt); NORMAL_TEXT Open Sans 11 pt | Contracts, acts, offers |
+
+Explicit `--alignment` / `--font` / `--font-size` flags override values from the preset.
 
 ## Round-trip Verification
 

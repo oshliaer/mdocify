@@ -1,6 +1,6 @@
 import type { BatchRequest } from '../types/google-docs.js';
 
-const MAX_REQUESTS_PER_BATCH = 1000;
+export const MAX_REQUESTS_PER_BATCH = 1000;
 
 function isInsertionRequest(req: BatchRequest): boolean {
   return 'insertText' in req || 'insertTable' in req || 'insertInlineImage' in req || 'insertSectionBreak' in req;

@@ -4,15 +4,24 @@ import path from 'node:path';
 import {
   uploadFile,
   copyAsGoogleDoc,
-  exportAsHtml,
+  exportAsDocx,
   exportAsMarkdown,
   updateWithUpload,
   deleteFile,
   cleanupFiles,
+  applyFormatting,
 } from './executor/native.js';
+import { resolvePreset } from './presets.js';
 import { diffMarkdown } from './roundtrip/diff.js';
 import { formatReport } from './roundtrip/report.js';
-import type { ConvertOptions, ConvertResult, LossReport } from './types/options.js';
+import type { Alignment, ConvertOptions, ConvertResult, LossReport } from './types/options.js';
+
+const ALIGNMENT_MAP: Record<Exclude<Alignment, 'none'>, 'START' | 'CENTER' | 'END' | 'JUSTIFIED'> = {
+  start: 'START',
+  center: 'CENTER',
+  end: 'END',
+  justified: 'JUSTIFIED',
+};
 
 export async function convert(
   markdownPath: string,
@@ -22,21 +31,26 @@ export async function convert(
   const title = options.title ?? path.basename(markdownPath, '.md');
   let documentId: string;
 
+  // Resolve preset up front so an unknown name fails before any document
+  // side effects (create/overwrite) happen.
+  const preset = options.preset ? resolvePreset(options.preset) : {};
+
   // Upload md to Google Drive
   const mdFileId = await uploadFile(markdownPath, `mdocify-temp-${Date.now()}.md`);
 
   try {
     if (options.documentId) {
-      // Overwrite existing: copy → export html → update target → cleanup
+      // Overwrite existing: copy → export docx → update target → cleanup.
+      // DOCX preserves bullet lists through the Drive re-import, HTML does not.
       const tempDocId = await copyAsGoogleDoc(mdFileId, `mdocify-temp-${Date.now()}`);
-      const htmlPath = path.join(os.tmpdir(), `mdocify-${Date.now()}.html`);
+      const docxPath = path.join(os.tmpdir(), `mdocify-${Date.now()}.docx`);
 
       try {
-        await exportAsHtml(tempDocId, htmlPath);
-        await updateWithUpload(options.documentId, htmlPath);
+        await exportAsDocx(tempDocId, docxPath);
+        await updateWithUpload(options.documentId, docxPath);
       } finally {
         await deleteFile(tempDocId).catch(() => {});
-        await cleanupFiles(htmlPath);
+        await cleanupFiles(docxPath);
       }
 
       documentId = options.documentId;
@@ -46,6 +60,21 @@ export async function convert(
     }
   } finally {
     await deleteFile(mdFileId).catch(() => {});
+  }
+
+  // Explicit options win over preset values
+  const alignment: Alignment = options.alignment ?? preset.alignment ?? 'none';
+  const fontFamily = options.fontFamily ?? preset.fontFamily;
+  const fontSize = options.fontSize ?? preset.fontSize;
+  const namedStyles = options.namedStyles ?? preset.namedStyles;
+
+  const textStyle = fontFamily || fontSize ? { fontFamily, fontSize } : undefined;
+  if (alignment !== 'none' || namedStyles || textStyle) {
+    await applyFormatting(documentId, {
+      alignment: alignment !== 'none' ? ALIGNMENT_MAP[alignment] : undefined,
+      namedStyles,
+      textStyle,
+    });
   }
 
   const url = `https://docs.google.com/document/d/${documentId}/edit`;
