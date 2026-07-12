@@ -19,11 +19,17 @@ program
   .option('--verify', 'Run round-trip verification after conversion')
   .option('-o, --output <path>', 'Path to save exported markdown (with --verify)')
   .option('-p, --preset <name>', 'Named bundle of post-upload settings (e.g. "legal")')
-  .option('-a, --alignment <value>', 'Paragraph alignment: start|center|end|justified|none')
+  .option('-a, --alignment <value>', 'Paragraph alignment: start|center|end|justified|none', (v) => {
+    const valid = ['start', 'center', 'end', 'justified', 'none'];
+    if (!valid.includes(v)) {
+      throw new Error(`Invalid --alignment "${v}": expected one of ${valid.join(', ')}`);
+    }
+    return v;
+  })
   .option('--font <family>', 'Font family (e.g. "Open Sans")')
   .option('--font-size <pt>', 'Font size in points', (v) => {
     const parsed = parseFloat(v);
-    if (Number.isNaN(parsed) || parsed <= 0) {
+    if (!Number.isFinite(parsed) || parsed <= 0) {
       throw new Error(`Invalid --font-size "${v}": expected a positive number`);
     }
     return parsed;
