@@ -4,15 +4,26 @@ import path from 'node:path';
 import {
   uploadFile,
   copyAsGoogleDoc,
-  exportAsHtml,
+  exportAsDocx,
   exportAsMarkdown,
   updateWithUpload,
   deleteFile,
   cleanupFiles,
+  applyAlignment,
+  applyTextStyle,
+  applyNamedStyles,
 } from './executor/native.js';
+import { resolvePreset } from './presets.js';
 import { diffMarkdown } from './roundtrip/diff.js';
 import { formatReport } from './roundtrip/report.js';
-import type { ConvertOptions, ConvertResult, LossReport } from './types/options.js';
+import type { Alignment, ConvertOptions, ConvertResult, LossReport } from './types/options.js';
+
+const ALIGNMENT_MAP: Record<Exclude<Alignment, 'none'>, 'START' | 'CENTER' | 'END' | 'JUSTIFIED'> = {
+  start: 'START',
+  center: 'CENTER',
+  end: 'END',
+  justified: 'JUSTIFIED',
+};
 
 export async function convert(
   markdownPath: string,
@@ -27,16 +38,17 @@ export async function convert(
 
   try {
     if (options.documentId) {
-      // Overwrite existing: copy → export html → update target → cleanup
+      // Overwrite existing: copy → export docx → update target → cleanup.
+      // DOCX preserves bullet lists through the Drive re-import, HTML does not.
       const tempDocId = await copyAsGoogleDoc(mdFileId, `mdocify-temp-${Date.now()}`);
-      const htmlPath = path.join(os.tmpdir(), `mdocify-${Date.now()}.html`);
+      const docxPath = path.join(os.tmpdir(), `mdocify-${Date.now()}.docx`);
 
       try {
-        await exportAsHtml(tempDocId, htmlPath);
-        await updateWithUpload(options.documentId, htmlPath);
+        await exportAsDocx(tempDocId, docxPath);
+        await updateWithUpload(options.documentId, docxPath);
       } finally {
         await deleteFile(tempDocId).catch(() => {});
-        await cleanupFiles(htmlPath);
+        await cleanupFiles(docxPath);
       }
 
       documentId = options.documentId;
@@ -46,6 +58,23 @@ export async function convert(
     }
   } finally {
     await deleteFile(mdFileId).catch(() => {});
+  }
+
+  // Resolve preset (if any) and let explicit options win
+  const preset = options.preset ? resolvePreset(options.preset) : {};
+  const alignment: Alignment = options.alignment ?? preset.alignment ?? 'none';
+  const fontFamily = options.fontFamily ?? preset.fontFamily;
+  const fontSize = options.fontSize ?? preset.fontSize;
+  const namedStyles = options.namedStyles ?? preset.namedStyles;
+
+  if (alignment !== 'none') {
+    await applyAlignment(documentId, ALIGNMENT_MAP[alignment]);
+  }
+  if (namedStyles) {
+    await applyNamedStyles(documentId, namedStyles);
+  }
+  if (fontFamily || fontSize) {
+    await applyTextStyle(documentId, { fontFamily, fontSize });
   }
 
   const url = `https://docs.google.com/document/d/${documentId}/edit`;

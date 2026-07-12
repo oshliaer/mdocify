@@ -18,13 +18,21 @@ program
   .option('-d, --document-id <id>', 'Existing document ID to update')
   .option('--verify', 'Run round-trip verification after conversion')
   .option('-o, --output <path>', 'Path to save exported markdown (with --verify)')
-  .action(async (file: string, opts: Record<string, string | boolean>) => {
+  .option('-p, --preset <name>', 'Named bundle of post-upload settings (e.g. "legal")')
+  .option('-a, --alignment <value>', 'Paragraph alignment: start|center|end|justified|none')
+  .option('--font <family>', 'Font family (e.g. "Open Sans")')
+  .option('--font-size <pt>', 'Font size in points', (v) => parseFloat(v))
+  .action(async (file: string, opts: Record<string, string | number | boolean>) => {
     try {
       const result = await convert(file, {
         title: opts.title as string | undefined,
         documentId: opts.documentId as string | undefined,
         verify: opts.verify as boolean | undefined,
         output: opts.output as string | undefined,
+        preset: opts.preset as string | undefined,
+        alignment: opts.alignment as 'start' | 'center' | 'end' | 'justified' | 'none' | undefined,
+        fontFamily: opts.font as string | undefined,
+        fontSize: opts.fontSize as number | undefined,
       });
 
       console.log(`Document created: ${result.url}`);
