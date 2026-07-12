@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { unlink } from 'node:fs/promises';
+import { MAX_REQUESTS_PER_BATCH } from './chunker.js';
 
 const exec = promisify(execFile);
 
@@ -213,10 +214,17 @@ export async function applyFormatting(documentId: string, opts: FormattingOption
 
   if (requests.length === 0) return;
 
-  const raw2 = await gws(
-    'docs', 'documents', 'batchUpdate',
-    '--params', JSON.stringify({ documentId }),
-    '--json', JSON.stringify({ requests }),
-  );
-  parseResponse(raw2);
+  // A large document can yield one updateTextStyle per paragraph, which may exceed
+  // the Docs batchUpdate request limit. Split into ordered chunks. All requests here
+  // are style updates (no insertions), so sequential chunks preserve precedence —
+  // the document-wide textStyle, pushed last, still lands in the final chunk.
+  for (let i = 0; i < requests.length; i += MAX_REQUESTS_PER_BATCH) {
+    const chunk = requests.slice(i, i + MAX_REQUESTS_PER_BATCH);
+    const raw2 = await gws(
+      'docs', 'documents', 'batchUpdate',
+      '--params', JSON.stringify({ documentId }),
+      '--json', JSON.stringify({ requests: chunk }),
+    );
+    parseResponse(raw2);
+  }
 }
