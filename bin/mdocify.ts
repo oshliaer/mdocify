@@ -21,7 +21,13 @@ program
   .option('-p, --preset <name>', 'Named bundle of post-upload settings (e.g. "legal")')
   .option('-a, --alignment <value>', 'Paragraph alignment: start|center|end|justified|none')
   .option('--font <family>', 'Font family (e.g. "Open Sans")')
-  .option('--font-size <pt>', 'Font size in points', (v) => parseFloat(v))
+  .option('--font-size <pt>', 'Font size in points', (v) => {
+    const parsed = parseFloat(v);
+    if (Number.isNaN(parsed) || parsed <= 0) {
+      throw new Error(`Invalid --font-size "${v}": expected a positive number`);
+    }
+    return parsed;
+  })
   .action(async (file: string, opts: Record<string, string | number | boolean>) => {
     try {
       const result = await convert(file, {
