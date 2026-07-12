@@ -9,9 +9,7 @@ import {
   updateWithUpload,
   deleteFile,
   cleanupFiles,
-  applyAlignment,
-  applyTextStyle,
-  applyNamedStyles,
+  applyFormatting,
 } from './executor/native.js';
 import { resolvePreset } from './presets.js';
 import { diffMarkdown } from './roundtrip/diff.js';
@@ -67,14 +65,13 @@ export async function convert(
   const fontSize = options.fontSize ?? preset.fontSize;
   const namedStyles = options.namedStyles ?? preset.namedStyles;
 
-  if (alignment !== 'none') {
-    await applyAlignment(documentId, ALIGNMENT_MAP[alignment]);
-  }
-  if (namedStyles) {
-    await applyNamedStyles(documentId, namedStyles);
-  }
-  if (fontFamily || fontSize) {
-    await applyTextStyle(documentId, { fontFamily, fontSize });
+  const textStyle = fontFamily || fontSize ? { fontFamily, fontSize } : undefined;
+  if (alignment !== 'none' || namedStyles || textStyle) {
+    await applyFormatting(documentId, {
+      alignment: alignment !== 'none' ? ALIGNMENT_MAP[alignment] : undefined,
+      namedStyles,
+      textStyle,
+    });
   }
 
   const url = `https://docs.google.com/document/d/${documentId}/edit`;

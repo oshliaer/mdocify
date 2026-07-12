@@ -104,47 +104,18 @@ export async function cleanupFiles(...paths: string[]): Promise<void> {
 
 export type Alignment = 'START' | 'CENTER' | 'END' | 'JUSTIFIED';
 
-async function getBodyEndIndex(documentId: string): Promise<number> {
-  const raw = await gws(
-    'docs', 'documents', 'get',
-    '--params', JSON.stringify({ documentId }),
-  );
-  const doc = parseResponse(raw);
-  const content = doc?.body?.content ?? [];
-  const last = content[content.length - 1];
-  return last?.endIndex ?? 1;
-}
-
-export async function applyAlignment(documentId: string, alignment: Alignment): Promise<void> {
-  const end = await getBodyEndIndex(documentId);
-  if (end <= 1) return;
-
-  const body = {
-    requests: [
-      {
-        updateParagraphStyle: {
-          range: { startIndex: 1, endIndex: end - 1 },
-          paragraphStyle: { alignment },
-          fields: 'alignment',
-        },
-      },
-    ],
-  };
-
-  const raw = await gws(
-    'docs', 'documents', 'batchUpdate',
-    '--params', JSON.stringify({ documentId }),
-    '--json', JSON.stringify(body),
-  );
-  parseResponse(raw);
-}
-
 export interface TextStyleOptions {
   fontFamily?: string;
   fontSize?: number;
 }
 
 export type NamedStyleMap = Partial<Record<string, TextStyleOptions>>;
+
+export interface FormattingOptions {
+  alignment?: Alignment;
+  namedStyles?: NamedStyleMap;
+  textStyle?: TextStyleOptions;
+}
 
 interface ParagraphRange {
   start: number;
@@ -193,69 +164,58 @@ function buildTextStyleRequest(style: TextStyleOptions, start: number, end: numb
   };
 }
 
-export async function applyNamedStyles(documentId: string, map: NamedStyleMap): Promise<void> {
+/**
+ * Apply alignment, per-namedStyle text overrides and a document-wide text style
+ * in a single pass: one `documents.get` to resolve ranges, one `batchUpdate` to
+ * apply every request. Requests are ordered alignment → namedStyles → textStyle,
+ * so an explicit document-wide `textStyle` wins over `namedStyles` on overlap
+ * (last write in a batchUpdate takes precedence).
+ */
+export async function applyFormatting(documentId: string, opts: FormattingOptions): Promise<void> {
   const raw = await gws(
     'docs', 'documents', 'get',
     '--params', JSON.stringify({ documentId }),
   );
   const doc = parseResponse(raw);
-  const paragraphs = collectParagraphRanges(doc?.body?.content ?? []);
+  const content = doc?.body?.content ?? [];
+  const last = content[content.length - 1];
+  const end = last?.endIndex ?? 1;
 
   const requests: unknown[] = [];
-  for (const p of paragraphs) {
-    const style = map[p.namedStyleType];
-    if (!style) continue;
-    // For heading-style paragraphs the trailing newline can carry run style from the
-    // next paragraph. Trim endIndex by 1 when the range is longer than one char.
-    const end = p.end - p.start > 1 ? p.end - 1 : p.end;
-    const req = buildTextStyleRequest(style, p.start, end);
+
+  if (opts.alignment && end > 2) {
+    requests.push({
+      updateParagraphStyle: {
+        range: { startIndex: 1, endIndex: end - 1 },
+        paragraphStyle: { alignment: opts.alignment },
+        fields: 'alignment',
+      },
+    });
+  }
+
+  if (opts.namedStyles) {
+    for (const p of collectParagraphRanges(content)) {
+      const style = opts.namedStyles[p.namedStyleType];
+      if (!style) continue;
+      // For heading-style paragraphs the trailing newline can carry run style from the
+      // next paragraph. Trim endIndex by 1 when the range is longer than one char.
+      const pEnd = p.end - p.start > 1 ? p.end - 1 : p.end;
+      const req = buildTextStyleRequest(style, p.start, pEnd);
+      if (req) requests.push(req);
+    }
+  }
+
+  if (opts.textStyle && end > 2) {
+    const req = buildTextStyleRequest(opts.textStyle, 1, end - 1);
     if (req) requests.push(req);
   }
+
   if (requests.length === 0) return;
 
-  const body = { requests };
   const raw2 = await gws(
     'docs', 'documents', 'batchUpdate',
     '--params', JSON.stringify({ documentId }),
-    '--json', JSON.stringify(body),
+    '--json', JSON.stringify({ requests }),
   );
   parseResponse(raw2);
-}
-
-export async function applyTextStyle(documentId: string, style: TextStyleOptions): Promise<void> {
-  const end = await getBodyEndIndex(documentId);
-  if (end <= 1) return;
-
-  const textStyle: Record<string, unknown> = {};
-  const fields: string[] = [];
-
-  if (style.fontFamily) {
-    textStyle.weightedFontFamily = { fontFamily: style.fontFamily };
-    fields.push('weightedFontFamily');
-  }
-  if (style.fontSize) {
-    textStyle.fontSize = { magnitude: style.fontSize, unit: 'PT' };
-    fields.push('fontSize');
-  }
-
-  if (fields.length === 0) return;
-
-  const body = {
-    requests: [
-      {
-        updateTextStyle: {
-          range: { startIndex: 1, endIndex: end - 1 },
-          textStyle,
-          fields: fields.join(','),
-        },
-      },
-    ],
-  };
-
-  const raw = await gws(
-    'docs', 'documents', 'batchUpdate',
-    '--params', JSON.stringify({ documentId }),
-    '--json', JSON.stringify(body),
-  );
-  parseResponse(raw);
 }

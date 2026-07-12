@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `namedStyles` option in `ConvertOptions` and in presets — map from `namedStyleType` (`NORMAL_TEXT`, `HEADING_1`, …) to `{ fontFamily?, fontSize? }`. Keeps heading sizes intact instead of collapsing the whole document to one run style.
 - `--alignment <value>` CLI flag (and `alignment` option in `ConvertOptions`) — optional post-upload paragraph alignment. Values: `start`, `center`, `end`, `justified`, `none`.
 - `--font <family>` and `--font-size <pt>` flags (and `fontFamily` / `fontSize` options) — single-style override applied to the entire document (use sparingly; prefer `namedStyles`).
-- `applyAlignment(documentId, alignment)`, `applyTextStyle(documentId, style)`, `applyNamedStyles(documentId, map)`, and `exportAsDocx(fileId, outputPath)` executor helpers.
+- `applyFormatting(documentId, opts)` and `exportAsDocx(fileId, outputPath)` executor helpers. `applyFormatting` applies alignment, per-`namedStyleType` overrides and a document-wide text style in a single `documents.get` + `batchUpdate` pass.
 
 ### Changed
 - **Existing-document update (`--document-id`) now goes through a DOCX intermediate instead of HTML.** HTML re-import stripped bullet lists; DOCX preserves them.
