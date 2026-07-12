@@ -144,6 +144,7 @@ function collectParagraphRanges(content: unknown[]): ParagraphRange[] {
 }
 
 function buildTextStyleRequest(style: TextStyleOptions, start: number, end: number): unknown | null {
+  if (start >= end) return null;
   const textStyle: Record<string, unknown> = {};
   const fields: string[] = [];
   if (style.fontFamily) {
