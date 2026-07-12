@@ -129,6 +129,9 @@ function collectParagraphRanges(content: unknown[]): ParagraphRange[] {
   const walk = (elems: unknown[]): void => {
     for (const e of elems as any[]) {
       if (e?.paragraph) {
+        // A structural element without numeric indices can't yield a valid range —
+        // skip it so no NaN reaches later arithmetic or request construction.
+        if (typeof e.startIndex !== 'number' || typeof e.endIndex !== 'number') continue;
         const nst = e.paragraph.paragraphStyle?.namedStyleType ?? 'NORMAL_TEXT';
         out.push({ start: e.startIndex, end: e.endIndex, namedStyleType: nst });
       } else if (e?.table) {
