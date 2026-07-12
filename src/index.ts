@@ -31,6 +31,10 @@ export async function convert(
   const title = options.title ?? path.basename(markdownPath, '.md');
   let documentId: string;
 
+  // Resolve preset up front so an unknown name fails before any document
+  // side effects (create/overwrite) happen.
+  const preset = options.preset ? resolvePreset(options.preset) : {};
+
   // Upload md to Google Drive
   const mdFileId = await uploadFile(markdownPath, `mdocify-temp-${Date.now()}.md`);
 
@@ -58,8 +62,7 @@ export async function convert(
     await deleteFile(mdFileId).catch(() => {});
   }
 
-  // Resolve preset (if any) and let explicit options win
-  const preset = options.preset ? resolvePreset(options.preset) : {};
+  // Explicit options win over preset values
   const alignment: Alignment = options.alignment ?? preset.alignment ?? 'none';
   const fontFamily = options.fontFamily ?? preset.fontFamily;
   const fontSize = options.fontSize ?? preset.fontSize;
